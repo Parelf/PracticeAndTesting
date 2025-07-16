@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import java.util.Scanner;
 
 public class Main {
 
@@ -24,11 +26,6 @@ public class Main {
 			throw new RuntimeException(e);
 		}
 
-		// Setting up our Query. Could be nice to place this logic within a JFrame to accept these strings as input.
-		// Will need to validate and check it though. Bad input and all that.
-
-		String albumName = "Tapestry";
-		String query = "SELECT * FROM music.albumview WHERE album_name='%s'".formatted(albumName);
 
 		// Making connection.
 
@@ -37,32 +34,49 @@ public class Main {
 		dataSource.setPort(Integer.parseInt(properties.getProperty("port")));
 		dataSource.setDatabaseName(properties.getProperty("databaseName"));
 
+		// Setting up our Query. Could be nice to place this logic within a JFrame to accept these strings as input.
+		// Will need to validate and check it though. Bad input and all that.
+//
+//		// This is the original Tester.
+//		String albumName = "Tapestry";
+//		String query = "SELECT * FROM music.albumview WHERE album_name='%s'".formatted(albumName);
+
+
+		Scanner scanner = new Scanner(System.in);
+		System.out.println("Enter an Album Name.");
+		String albumName = scanner.nextLine();
+		String query = "SELECT * FROM music.albumview WHERE album_name= ? ";
+
+
 		// This is important as this code-block will automatically close the connection for you on completion.
 		// This try makes the connection and also opens a statement on that connection.
 		// It basically prepares a way to send your Query.
 		try(var connection = dataSource.getConnection(
 				properties.getProperty("user"),
 				System.getenv("MYSQL_PASS"));
-			Statement statement = connection.createStatement()
+			PreparedStatement statement = connection.prepareStatement(query);
 		) {
 
 			// Here we send and receive our Query.
-			ResultSet resultSet = statement.executeQuery(query);
+			statement.setString(1,albumName);
+			ResultSet resultSet = statement.executeQuery();
 
 
 			// Here we make a resultSet for our metadata, nicely formatted.
 			// This should contain all the most basic metadata we need for easy operation.
 			var meta = resultSet.getMetaData();
-			for (int i = 1; i <= meta.getColumnCount(); i++){
 
-				// Printing all our column's metadata.
-
-				System.out.printf("%d %s %s %n",
-						i,
-						meta.getColumnName(i),
-						meta.getColumnTypeName(i));
-
-			}
+			// No need to print metadata unless you want to test
+//			for (int i = 1; i <= meta.getColumnCount(); i++){
+//
+//				// Printing all our column's metadata.
+//
+//				System.out.printf("%d %s %s %n",
+//						i,
+//						meta.getColumnName(i),
+//						meta.getColumnTypeName(i));
+//
+//			}
 
 			// Normal separator line.
 			System.out.println("-".repeat(30));
